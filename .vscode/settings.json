@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "C:/Users/x000665/AppData/Local/Microsoft/WindowsApps/python.exe",
+    "python.analysis.extraPaths": ["app", "another/path/etc"]
+}

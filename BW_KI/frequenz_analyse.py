@@ -1,0 +1,69 @@
+import numpy as np
+import librosa
+import os
+
+class AudioAnalyzer:
+    def __init__(self, filepath, target_frequencies):
+        self.filepath = filepath
+        self.target_frequencies = np.array(target_frequencies)
+        self.audio_data = None
+        self.sample_rate = None
+        self.decibel_levels_over_time = {}
+        self.time_stamps = None
+
+    def load_audio(self):
+        # Lade die Audiodatei mit librosa
+        self.audio_data, self.sample_rate = librosa.load(self.filepath, sr=None)
+        print(f"Audio geladen: {self.filepath}, Sample-Rate: {self.sample_rate} Hz")
+
+    def analyze_frequencies(self):
+        # Berechne die STFT (Short-Time Fourier Transform)
+        stft_result = np.abs(librosa.stft(self.audio_data))
+        # Frequenz-Bins und Zeitpunkte
+        freqs = librosa.fft_frequencies(sr=self.sample_rate)
+        times = librosa.frames_to_time(np.arange(stft_result.shape[1]), sr=self.sample_rate)
+        
+        # Finde die Frequenzen in den Frequenz-Bins
+        for target_freq in self.target_frequencies:
+            idx = (np.abs(freqs - target_freq)).argmin()
+            # Extrahiere die Amplitude für die Ziel-Frequenz über die Zeit
+            amplitude_over_time = stft_result[idx, :]
+            # Umrechnung von Amplitude in Dezibel
+            decibels_over_time = 20 * np.log10(amplitude_over_time + 1e-6)  # Kleiner Wert, um log von 0 zu vermeiden
+            self.decibel_levels_over_time[target_freq] = decibels_over_time
+        self.time_stamps = times
+
+    def get_results(self):
+        results = []
+        for freq in self.target_frequencies:
+            decibels = self.decibel_levels_over_time.get(freq, [])
+            results.append(' '.join([f'{db:.1f}' for db in decibels]))
+        return results
+
+def process_files(filepaths, target_frequencies, output_filename):
+    with open(output_filename, 'w') as f:
+        for filepath in filepaths:
+            # Erstelle das AudioAnalyzer-Objekt für jede Datei
+            analyzer = AudioAnalyzer(filepath, target_frequencies)
+            analyzer.load_audio()
+            analyzer.analyze_frequencies()
+            
+            # Ergebnisse für die aktuelle Datei
+            results = analyzer.get_results()
+            for result in results:
+                f.write(result + '\n')
+
+    print(f"Ergebnisse in Datei '{output_filename}' gespeichert.")
+
+# Definiere die Frequenzen, die du analysieren möchtest
+target_frequencies = [250]  # Beispielhafte Frequenzen, ersetze sie nach Bedarf
+
+# Verzeichnis mit den Audiodateien
+directory = "C:/daten/python/Samples0/"
+filepaths = [os.path.join(directory, f"{i}.mp3") for i in range(4, 5)]
+
+# Datei, in der die Ergebnisse gespeichert werden
+output_filename = "frequenz_analyse.txt"
+
+# Verarbeite die Dateien und speichere die Ergebnisse
+process_files(filepaths, target_frequencies, output_filename)
