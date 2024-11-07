@@ -1,61 +1,31 @@
 import numpy as np
-import pyaudio
-import matplotlib.pyplot as plt
-from scipy import signal
+import scipy.io.wavfile as wav
+from scipy.signal import iirnotch, filtfilt
 
-# PyAudio-Konfiguration
-FORMAT = pyaudio.paInt16  # 16-Bit Auflösung
-CHANNELS = 1              # Mono
-RATE = 44100               # Abtastrate (Hz)
-CHUNK = 1024 * 4              # Frames pro Buffer
-DEVICE_INDEX_INPUT = 2     # Mikrofon Eingabegerät
-DEVICE_INDEX_OUTPUT = 4    # Lautsprecher Ausgabegerät
+# Lade die WAV-Datei
+sample_rate, data = wav.read('rinput_440hz.wav')
 
-# Notch-Filter-Konfiguration
-notch_freq = 440  # Frequenz, die entfernt werden soll (Hz)
-quality_factor = 50.0  # Qualität des Filters
-b_notch, a_notch = signal.iirnotch(notch_freq, quality_factor, RATE)
+# Überprüfe, ob das Audio Stereo oder Mono ist
+if len(data.shape) > 1:
+    # Wähle den linken Kanal aus (falls Stereo)
+    data = data[:, 0]
 
-# Audio-Stream öffnen
-p = pyaudio.PyAudio()
-stream = p.open(
-    format=FORMAT,
-    channels=CHANNELS,
-    rate=RATE,
-    input=True,
-    output=True,
-    input_device_index=DEVICE_INDEX_INPUT,
-    output_device_index=DEVICE_INDEX_OUTPUT,
-    frames_per_buffer=CHUNK
-)
+# Liste der Frequenzen, die gefiltert werden sollen
+notch_freqs = [430, 440, 1320]  # Frequenzen in Hz, die du filtern möchtest
+quality_factor = 30.0  # Qualität des Filters (je höher, desto schmaler der Filter)
 
+# Wende Notch-Filter für jede Frequenz an
+filtered_data = data.copy()  # Kopiere das Originalsignal, um es zu filtern
 
-print("Starte Mikrofon-Streaming...")
-try:
-    while True:
-        # Audio Daten vom Mikrofon aufnehmen
-        data = stream.read(CHUNK, exception_on_overflow=False)
-        audio_data = np.frombuffer(data, dtype=np.int16)  # Konvertierung in numpy-Array
+for notch_freq in notch_freqs:
+    # Berechne die Notch-Filterkoeffizienten
+    b, a = iirnotch(notch_freq, quality_factor, fs=sample_rate)
+    
+    # Wende den Filter auf das Audiosignal an
+    filtered_data = filtfilt(b, a, filtered_data)
 
+# Speichere die gefilterte WAV-Datei
+output_file = 'output_filtered_multiple_freqs.wav'
+wav.write(output_file, sample_rate, filtered_data.astype(np.int16))
 
-        
-        # Notch-Filter auf das Mikrofon-Signal anwenden
-        y_notched = signal.filtfilt(b_notch, a_notch, audio_data)
-
-
-
-
-        # Wiedergabe des gefilterten Signals (optional)
-        filtered_output = y_notched.astype(np.int16).tobytes()
-        stream.write(filtered_output)
-
-except KeyboardInterrupt:
-    print("Streaming beendet")
-
-finally:
-    # Beende den Audio-Stream
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-    plt.ioff()  # Deaktiviert interaktiven Modus
-    plt.show()
+print(f"Die gefilterte Audiodatei wurde unter '{output_file}' gespeichert.")

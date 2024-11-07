@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     # Datei mit den Frequenzdaten
     filename = 'frequenz_analyse.txt'
-
+    
     # Verarbeite die Datei und erhalte die Ergebnisse
     predictions = process_file(filename, model)
     frequencies = ['250Hz', "300Hz", "400Hz"]  # Beispielhafte Frequenzen

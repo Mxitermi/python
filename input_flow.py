@@ -24,7 +24,7 @@ class AudioStream(object):
             100.,
             200.,
             300.,
-            400.,
+            440.,
             500.,
             700.,
             1000.,
@@ -83,6 +83,9 @@ class AudioStream(object):
             self.values.append(freq)
             prediction = predict(torch.from_numpy(np.array(self.values).transpose().astype(np.float32)), model)
 
+            if(1 in prediction):
+                print(prediction)
+            
             frame_count += 1
 
             if time.time() - start_time >= 20:
@@ -121,15 +124,13 @@ def load_model() -> object:
                 super().__init__()
                 n_neurons = 12
                 self.layers = nn.Sequential(
-                    nn.Linear(input_size, 10),
+                    nn.Linear(input_size, 64),
                     nn.ReLU(),
-                    nn.Linear(10, 20),
+                    nn.Linear(64, 32),
                     nn.ReLU(),
-                    nn.Linear(20, 12),
+                    nn.Linear(32, 16),
                     nn.ReLU(),
-                    nn.Linear(12, 10),
-                    nn.ReLU(),
-                    nn.Linear(10, output_size)  
+                    nn.Linear(16, output_size)  
                 )
             def forward(self, x):
                 #x = x - feature_means
