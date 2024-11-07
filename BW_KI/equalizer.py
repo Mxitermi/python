@@ -11,8 +11,8 @@ TARGET_FREQUENCY = 440  # Ziel-Frequenz in Hz (A4)
 MAX_GAIN = 0  # Verstärkung auf 0 setzen für die Ziel-Frequenz
 
 # Identifiziere das virtuelle Gerät für die Audioeingabe (z.B., "CABLE Output")
-input_device_name = 'CABLE Output'  # Virtuelles Audiogerät
-output_device_name = None  # Standard-Lautsprecher
+input_device_name = sd.query_devices()[0]["name"]  # Virtuelles Audiogerät
+output_device_name = sd.query_devices()[0]["name"]  # Standard-Lautsprecher
 
 def get_device_index(device_name, kind='input'):
     """Finde die Geräte-ID eines spezifischen Geräts nach Namen."""
