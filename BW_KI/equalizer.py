@@ -1,93 +1,70 @@
-import sounddevice as sd
+import pyaudio
 import numpy as np
-from scipy.fft import rfft, irfft, rfftfreq
+from scipy.fftpack import fft, fftfreq, ifft
 
-# Einstellungen für die Audiobearbeitung
-SAMPLE_RATE = 44100  # Abtastrate (44.1 kHz für hohe Qualität)
-BLOCK_SIZE = 1024    # Blockgröße (kleinere Blöcke = geringere Latenz)
+# Parameter
+CHUNK = 1024 * 4
+FORMAT = pyaudio.paInt16  # 16-Bit signed Integer
+CHANNELS = 1
+RATE = 44100
+FREQUENCY = 500  # Ziel-Frequenz in Hz (die zu stummschaltende Frequenz)
 
-# Frequenz, die unterdrückt werden soll
-TARGET_FREQUENCY = 440  # Ziel-Frequenz in Hz (A4)
-MAX_GAIN = 0  # Verstärkung auf 0 setzen für die Ziel-Frequenz
+# PyAudio initialisieren
+p = pyaudio.PyAudio()
 
-# Identifiziere das virtuelle Gerät für die Audioeingabe (z.B., "CABLE Output")
-input_device_name = 'CABLE Output'  # Virtuelles Audiogerät
-output_device_name = None  # Standard-Lautsprecher
+# Stream öffnen
+stream = p.open(
+    format=FORMAT,
+    channels=CHANNELS,
+    rate=RATE,
+    input=True,
+    output=True,
+    input_device_index=2,
+    output_device_index=4,
+    frames_per_buffer=CHUNK
+)
 
-def get_device_index(device_name, kind='input'):
-    """Finde die Geräte-ID eines spezifischen Geräts nach Namen."""
-    if not device_name:  # Gerätename ist None oder leer
-        return None
+# Phase für den Sinuston (wird über mehrere Schleifen aufrechterhalten)
+phase = 0
+omega = 2 * np.pi * FREQUENCY / RATE  # Kreisfrequenz für den Sinuston
 
-    devices = sd.query_devices()
-    for idx, device in enumerate(devices):
-        if kind == 'input' and device_name in device['name'] and device['max_input_channels'] > 0:
-            return idx
-        elif kind == 'output' and device_name in device['name'] and device['max_output_channels'] > 0:
-            return idx
-    return None
+print("Listening...")
 
-# Finde die Geräte-IDs für die Eingabe und Ausgabe
-input_device = get_device_index(input_device_name, kind='input')
-output_device = get_device_index(output_device_name, kind='output')
+try:
+    while True:
+        # Lese Daten vom Mikrofon
+        data = stream.read(CHUNK)
+        audio_data = np.frombuffer(data, dtype=np.int16)
 
-# Überprüfen, ob die Geräte vorhanden sind
-if input_device is None:
-    raise ValueError(f"Eingabegerät '{input_device_name}' nicht gefunden.")
-if output_device is None:
-    print(f"Standardausgabegerät wird verwendet.")
+        # FFT auf die Daten anwenden
+        N = len(audio_data)
+        yf = fft(audio_data)
+        xf = fftfreq(N, 1 / RATE)[:N // 2]  # Nur positive Frequenzen behalten
 
-def weighted_gain(frequency, current_freq, max_gain):
-    """Berechnet die Verstärkung basierend auf der Distanz zur Ziel-Frequenz."""
-    distance = abs(current_freq - frequency)
-    if distance == 0:
-        return 0  # Ziel-Frequenz unterdrücken
-    elif distance <= 1:
-        return max_gain * 0.2  # 20% Verstärkung
-    elif distance <= 2:
-        return max_gain * 0.5  # 50% Verstärkung
-    elif distance <= 3:
-        return max_gain * 0.9  # 90% Verstärkung
-    else:
-        return 1  # Keine Dämpfung
+        # Index der Ziel-Frequenz finden
+        index = np.argmin(np.abs(xf - FREQUENCY))
 
-def apply_weighted_eq(data, sample_rate, target_frequency, max_gain):
-    """Wendet den gewichteten Equalizer auf ein Datenblock an."""
-    # FFT auf den Datenblock
-    freqs = rfftfreq(len(data), d=1/sample_rate)
-    fft_data = rfft(data)
+        # Amplitude der Ziel-Frequenz berechnen
+        print(index)
+        yf[:N // 2][index] = 0
+        for i in range(0, 20):
+            yf[:N // 2][index - 20 + i] = 0
 
-    # Berechnung der Verstärkungsfaktoren für die Ziel-Frequenz
-    total_gain = np.ones_like(fft_data)
-    gain = weighted_gain(target_frequency, freqs, max_gain)
-    total_gain *= gain  # Kombiniere Verstärkungen
+        recovered_signal = ifft(yf)
 
-    # Anwenden des Gesamt-Verstärkungsprofils
-    fft_data *= total_gain
+        # Da die iFFT theoretisch komplexe Zahlen ausgibt (durch numerische Ungenauigkeiten),
+        # musst du den reellen Teil des Ergebnisses nehmen:
+        recovered_signal = np.real(recovered_signal).astype(np.int16)
 
-    # Inverse FFT zurück in den Zeitbereich
-    filtered_data = irfft(fft_data)
-    return filtered_data
+        # Ausgabedaten an das Audio-Interface senden
+        data_out_ = recovered_signal.tobytes()
+        stream.write(data_out_)
 
-# Audio-Callback-Funktion für Echtzeit-Bearbeitung
-def audio_callback(indata, outdata, frames, time, status):
-    """Verarbeitet die Audio-Daten in Echtzeit."""
-    if status:
-        print(status, flush=True)
+except KeyboardInterrupt:
+    print("Streaming beendet.")
 
-    # Wandle das Audio-Signal in ein 1D-NumPy-Array um
-    audio_data = indata[:, 0]
-
-    # Wende den Equalizer auf den aktuellen Block an
-    equalized_data = apply_weighted_eq(audio_data, SAMPLE_RATE, TARGET_FREQUENCY, MAX_GAIN)
-
-    # Schreibe die bearbeiteten Daten zum Output-Puffer
-    outdata[:, 0] = equalized_data
-
-# Starten des Streams: Verwende das virtuelle Gerät als Input, Lautsprecher als Output
-with sd.Stream(device=(input_device, output_device), channels=1, samplerate=SAMPLE_RATE, blocksize=BLOCK_SIZE, callback=audio_callback):
-    print("Live-Audio-Equalizer läuft... Drücke 'Strg+C' zum Beenden.")
-    try:
-        sd.sleep(1000000)  # Laufen lassen, bis der Benutzer den Prozess beendet
-    except KeyboardInterrupt:
-        print("\nLive-Audio-Equalizer beendet.")
+finally:
+    # Stream schließen
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
