@@ -1,5 +1,6 @@
 import pyaudio
 import numpy as np
+import sounddevice as sd
 from scipy.fft import rfft, irfft, rfftfreq
 
 # Einstellungen für die Audiobearbeitung

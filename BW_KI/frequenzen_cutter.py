@@ -1,13 +1,12 @@
 import os
 
 def main():
-    input_file = "C:/daten/python/frequenz_analyse.txt"
-    output_file = "C:/daten/python/frequenz_analyse.txt"
+    input_file = "C:/daten/python/frequenz_analyse_real.txt"
+    output_file = "C:/daten/python/frequenz_analyse_cut_real.txt"
 
     def kürze_auf_vielfaches_von_13(arr):
         # Länge des Arrays so kürzen, dass es ein Vielfaches von 13 ist
-        länge = len(arr)
-        kürzung = länge - (länge % 13)  # Das nächste Vielfache von 13 kleiner oder gleich der Länge
+        kürzung = len(arr) - (len(arr) % 13)  # Nächstes Vielfaches von 13 kleiner oder gleich der Länge
         return arr[:kürzung]
 
     try:
@@ -20,6 +19,8 @@ def main():
                 r = line.split()
                 # Kürze die Liste der Floats auf ein Vielfaches von 13
                 gekürzte_liste = kürze_auf_vielfaches_von_13(r)
+                # Am Ende der gekürzten Liste eine "0" anhängen
+                gekürzte_liste.append("0")
                 # Zusammenfügen der gekürzten Liste als String
                 new_line = ' '.join(gekürzte_liste)
                 liste.append(new_line)

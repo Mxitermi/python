@@ -57,4 +57,4 @@ while True:
     data_out_ = data_filtered.tobytes()  # In Bytes umwandeln
 
     # Daten an das Ausgabegerät senden
-    stream.write(data_out_)
+    stream.write(data)

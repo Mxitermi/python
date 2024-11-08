@@ -8,7 +8,7 @@ class AudioAnalyzer:
         self.target_frequencies = np.array(target_frequencies)
         self.audio_data = None
         self.sample_rate = None
-        self.decibel_levels_over_time = {}
+        self.amplitude_levels_over_time = {}
         self.time_stamps = None
 
     def load_audio(self):
@@ -28,15 +28,13 @@ class AudioAnalyzer:
             idx = (np.abs(freqs - target_freq)).argmin()
             # Extrahiere die Amplitude für die Ziel-Frequenz über die Zeit
             amplitude_over_time = stft_result[idx, :]
-            # Umrechnung von Amplitude in Dezibel
-            decibels_over_time = 20 * np.log10(amplitude_over_time + 1e-6)  # Kleiner Wert, um log von 0 zu vermeiden
-            self.decibel_levels_over_time[target_freq] = decibels_over_time
+            self.amplitude_levels_over_time[target_freq] = amplitude_over_time
         self.time_stamps = times
 
     def get_results(self):
         results = []
         for freq in self.target_frequencies:
-            decibels = self.decibel_levels_over_time.get(freq, [])
+            decibels = self.amplitude_levels_over_time.get(freq, [])
             results.append(' '.join([f'{db:.1f}' for db in decibels]))
         return results
 
@@ -56,14 +54,14 @@ def process_files(filepaths, target_frequencies, output_filename):
     print(f"Ergebnisse in Datei '{output_filename}' gespeichert.")
 
 # Definiere die Frequenzen, die du analysieren möchtest
-target_frequencies = [250]  # Beispielhafte Frequenzen, ersetze sie nach Bedarf
+target_frequencies = [131, 139, 147, 156, 165, 175, 185, 196,208,220,233,247,262,277,294,311,330,349,370,392,415,440,466,494,523,554,587,622,659,698,740,784,831,880,932,988,1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976,2093,2217,2349,2489,2637,2794,2960,3136,3322,3520,3729,3951,4186,4435,4699,4978,5274,5588,5920,6272,6645,7040,7459,7902]  # Beispielhafte Frequenzen, ersetze sie nach Bedarf
 
 # Verzeichnis mit den Audiodateien
-directory = "C:/daten/python/Samples0/"
-filepaths = [os.path.join(directory, f"{i}.mp3") for i in range(4, 5)]
+directory = "C:/daten/python/Samples0_real/"
+filepaths = [os.path.join(directory, f"{i}.mp3") for i in range(1, 16)]
 
 # Datei, in der die Ergebnisse gespeichert werden
-output_filename = "frequenz_analyse.txt"
+output_filename = "frequenz_analyse_real.txt"
 
 # Verarbeite die Dateien und speichere die Ergebnisse
 process_files(filepaths, target_frequencies, output_filename)
