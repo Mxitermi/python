@@ -8,7 +8,7 @@ def train(D):
     train, test = D[:len_train], D[len_train:]
 
     # Hyper-Parameter
-    n_steps = 9300
+    n_steps = 10000
     learning_rate = 0.003
     input_size = 13  # Die Anzahl der Werte pro Datensatz
     output_size = 1
@@ -36,17 +36,23 @@ def train(D):
         def __init__(self, input_size):
             super().__init__()
             self.layers = nn.Sequential(
-                nn.Linear(input_size, 64),  # Erste Schicht: 13 -> 64
+                nn.Linear(input_size, 128),  # Optional: größere erste Schicht
                 nn.ReLU(),
-                nn.Linear(64, 32),  # Zweite Schicht: 64 -> 32
+                nn.Linear(128, 64),  # Optional: zweite größere Schicht
                 nn.ReLU(),
-                nn.Linear(32, 16),  # Dritte Schicht: 32 -> 16
+                nn.Linear(64, 64),
                 nn.ReLU(),
-                nn.Linear(16, output_size)  # Letzte Schicht: 16 -> 1 (für 0 oder 1 als Ausgabe)
+                nn.BatchNorm1d(64),  # Batch-Normalisierung für stabileres Training
+                nn.Linear(64, 32),
+                nn.ReLU(),
+                nn.Linear(32, 16),
+                nn.ReLU(),
+                nn.Linear(16, 1)  # Letzte Schicht für binäre Klassifikation
             )
 
         def forward(self, x):
             return self.layers(x)
+
 
     model = MLP(input_size)
 
@@ -90,13 +96,13 @@ def data_structure(data):
 
 def main():
     data = []
-    filename = "data.txt"
+    filename = "data_real.txt"
     try:
         with open(os.path.join(os.path.dirname(__file__), filename), "r", encoding="utf-8") as file:
             for line in file:
                 # Werte aus der Zeile extrahieren und in Float umwandeln
                 values = list(map(float, line.strip().split()))
-
+                
                 # Letztes Element als Label (0 oder 1) extrahieren
                 label = values[-1]
                 # Alle anderen Werte als Datenpunkte extrahieren
@@ -110,13 +116,16 @@ def main():
                         # Paket mit Label hinzufügen
                         data.append(batch + [label])
 
+        # **Gesamtes Dataset einmal mischen**
+        np.random.shuffle(data)
+
     except IOError:
         print("Datei existiert nicht. Stellen Sie sicher, dass die Datei vorhanden ist und im richtigen Verzeichnis liegt.")
         return
 
     # Trainiere das Modell mit den aufbereiteten Daten
     model = train(data_structure(data))
-    torch.save(model.state_dict(), "model.pt")
+    torch.save(model.state_dict(), "model_real.pt")
 
 if __name__ == "__main__":
     main()

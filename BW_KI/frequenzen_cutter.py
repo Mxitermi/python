@@ -2,7 +2,7 @@ import os
 
 def main():
     input_file = "C:/daten/python/frequenz_analyse_real.txt"
-    output_file = "C:/daten/python/frequenz_analyse_cut_real.txt"
+    output_file = "C:/daten/python/frequenz_analyse_cut_real1.txt"
 
     def kürze_auf_vielfaches_von_13(arr):
         # Länge des Arrays so kürzen, dass es ein Vielfaches von 13 ist
