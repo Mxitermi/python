@@ -22,14 +22,15 @@ def load_model():
         def __init__(self, input_size):
             super().__init__()
             self.layers = nn.Sequential(
-                nn.Linear(input_size, 64),  # Erste Schicht: 13 -> 64
-                nn.ReLU(),
-                nn.Linear(64, 32),  # Zweite Schicht: 64 -> 32
-                nn.ReLU(),
-                nn.Linear(32, 16),  # Dritte Schicht: 32 -> 16
-                nn.ReLU(),
-                nn.Linear(16, output_size)  # Letzte Schicht: 16 -> 1 (für 0 oder 1 als Ausgabe)
-            )
+            nn.Linear(input_size, 128),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, output_size)  # Ausgabe für binäre Klassifikation
+        )
 
         def forward(self, x):
             out = self.layers(x)
@@ -37,7 +38,7 @@ def load_model():
 
     model = MLP(input_size)
     # Lade die Modellgewichte
-    model.load_state_dict(torch.load('model.pt', map_location=torch.device('cpu'), weights_only=True))
+    model.load_state_dict(torch.load('model_real.pt', map_location=torch.device('cpu'), weights_only=True))
     return model
 
 # Funktion zum Einlesen der Datei und Vorhersage für jedes 13er-Paket
@@ -80,16 +81,18 @@ if __name__ == "__main__":
     model.eval()  # Setze das Modell in den Evaluierungsmodus
 
     # Datei mit den Frequenzdaten
-    filename = 'frequenz_analyse.txt'
+    filename = "C:/daten/python/frequenz_analyse_cut.txt"
     
     # Verarbeite die Datei und erhalte die Ergebnisse
     predictions = process_file(filename, model)
-    frequencies = ['250Hz', "300Hz", "400Hz"]  # Beispielhafte Frequenzen
+    frequencies = [131, 139, 147, 156, 165, 175, 185, 196,208,220,233,247,262,277,294,311,330,349,370,392,415,440,466,494,523,554,587,622,659,698,740,784,831,880,932,988,1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976,2093,2217,2349,2489,2637,2794,2960,3136,3322,3520,3729,3951,4186,4435,4699,4978,5274,5588,5920,6272,6645,7040,7459,7902]  # Beispielhafte Frequenzen, ersetze sie nach Bedarf
 
     # Parameter
     group_size = 13  # Jede Frequenz hat 13 Werte
 
     # Über die Frequenzen iterieren
+    r = 0
+    k = 0
     for freq_idx, freq in enumerate(frequencies):
         rueckkopplung_erkannt = False
         print(f"Frequenz: {freq}")
@@ -103,12 +106,15 @@ if __name__ == "__main__":
             if wert > 0.5:
                 rueckkopplung_erkannt = True
                 zeitpunkt = ((start_idx + idx) * 0.1) + 0.1  # Zeit in Sekunden basierend auf dem Index
-                print(f"  Rückkopplung erkannt bei {zeitpunkt:.1f} Sekunden.")
+                #print(f"  Rückkopplung erkannt bei {zeitpunkt:.1f} Sekunden.")
+                r = r + 1
             else:
-                if rueckkopplung_erkannt:
-                    print(f"  Keine Rückkopplung erkannt bei {zeitpunkt:.1f} Sekunden.")
-        
+                k = k + 1
         # Wenn für diese Frequenz keine Rückkopplung erkannt wurde
         if not rueckkopplung_erkannt:
             print("  Keine Rückkopplung erkannt.")
+    p = r + k
+    t = r / p
+    j = k / p
+    print(f"Erkannt:{p} R:{t} K:{j}")
 
