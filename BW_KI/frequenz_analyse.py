@@ -58,10 +58,10 @@ target_frequencies = [131, 139, 147, 156, 165, 175, 185, 196,208,220,233,247,262
 
 # Verzeichnis mit den Audiodateien
 directory = "C:/daten/python/Samples0_real/"
-filepaths = [os.path.join(directory, f"{i}.mp3") for i in range(18, 19)]
+filepaths = [os.path.join(directory, f"{i}.mp3") for i in range(1, 2)]
 
 # Datei, in der die Ergebnisse gespeichert werden
-output_filename = "frequenz_analyse_real.txt"
+output_filename = "frequenz_analyse.txt"
 
 # Verarbeite die Dateien und speichere die Ergebnisse
 process_files(filepaths, target_frequencies, output_filename)

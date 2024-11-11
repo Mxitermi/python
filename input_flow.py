@@ -118,25 +118,30 @@ def predict(input, model):
 def load_model() -> object:
     output_size = 1
     input_size = 13
-
+    dropout_prob = 0.3
+    
     class MLP(nn.Module):
         def __init__(self, input_size):
             super().__init__()
             self.layers = nn.Sequential(
-                nn.Linear(input_size, 64),
-                nn.ReLU(),
-                nn.Linear(64, 32),
-                nn.ReLU(),
-                nn.Linear(32, 16),
-                nn.ReLU(),
-                nn.Linear(16, output_size)
-            )
+            nn.Linear(input_size, 256),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_prob),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_prob),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, output_size)  # Ausgabe für binäre Klassifikation
+        )
 
         def forward(self, x):
             return self.layers(x)
 
     model = MLP(input_size)
-    model.load_state_dict(torch.load('model.pt', weights_only=True))
+    model.load_state_dict(torch.load('model_real.pt', weights_only=True))
     return model
 
 if __name__ == '__main__':
