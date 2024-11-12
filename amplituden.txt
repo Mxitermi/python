@@ -1,0 +1,20 @@
+Segment 0ms - 500ms:
+  Frequency Range 20-200 Hz: Amplitude = 1713255.240679
+  Frequency Range 1000-2000 Hz: Amplitude = 207419.918954
+
+Segment 500ms - 1000ms:
+  Frequency Range 20-200 Hz: Amplitude = 2645281.143960
+  Frequency Range 1000-2000 Hz: Amplitude = 275759.467876
+
+Segment 1000ms - 1500ms:
+  Frequency Range 20-200 Hz: Amplitude = 1903999.735020
+  Frequency Range 1000-2000 Hz: Amplitude = 322646.053097
+
+Segment 1500ms - 2000ms:
+  Frequency Range 20-200 Hz: Amplitude = 1251390.859611
+  Frequency Range 1000-2000 Hz: Amplitude = 225071.759939
+
+Segment 2000ms - 2225ms:
+  Frequency Range 20-200 Hz: Amplitude = 921003.597310
+  Frequency Range 1000-2000 Hz: Amplitude = 119735.958416
+

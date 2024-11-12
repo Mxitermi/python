@@ -13,7 +13,7 @@ class AudioStream(object):
         self.CHUNK = 1024 * 2
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
-        self.RATE = 48000
+        self.RATE = 44100
         self.pause = False
         
         #Abtastrate in Sekunden pro Abfrage
@@ -31,6 +31,7 @@ class AudioStream(object):
             1500.,
             2000.,
             3000.,
+            4000.,
             6000.])
         self.FREQUENCIES *= float(self.CHUNK/self.RATE)
         #Später Zwiscchenspeicherung der einzelnen Lautstärken

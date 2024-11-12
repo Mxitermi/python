@@ -13,41 +13,29 @@ class AudioStream(object):
         self.CHUNK = 1024 * 2
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
-        self.RATE = 48000
+        self.RATE = 44100
         self.pause = False
         
         #Abtastrate in Sekunden pro Abfrage
         self.DELAYS = 0.05
         #Frequenzen, die geprüft werden sollen
         self.FREQUENCIES = np.array([
-            50.,
-            100.,
-            200.,
-            300.,
-            400.,
-            440.,
-            500.,
-            1000.,
-            1500.,
-            2000.,
-            3000.,
-            5000.,
-            6000.])
+            250.])
         self.FREQUENCIES *= float(self.CHUNK/self.RATE)
         #Später Zwiscchenspeicherung der einzelnen Lautstärken
-        self.values = [np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13),
-                       np.zeros(13)]
+        self.values = [np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1),
+                       np.zeros(1)]
 
         # stream object
         self.p = pyaudio.PyAudio()
@@ -79,8 +67,8 @@ class AudioStream(object):
 
             # compute FFT and update line
             yf = fft(data_int)
-            export = np.abs(yf[0:self.CHUNK]) / (128 * self.CHUNK)
             
+            export = np.abs(yf[0:self.CHUNK]) / (128 * self.CHUNK)
             freq = np.array([float(export[int(i)]) for i in self.FREQUENCIES])
             self.values.pop(0)
             self.values.append(freq)
@@ -96,7 +84,7 @@ class AudioStream(object):
 
             if time.perf_counter()-s_time <= self.DELAYS:
                 time.sleep(self.DELAYS-(time.perf_counter()-s_time))
-
+            self.stream.write(data)
         else:
             self.fr = frame_count / (time.time() - start_time)
             print('average operation rate = {:.0f} per second'.format(self.fr))

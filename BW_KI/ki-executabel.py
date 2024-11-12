@@ -85,7 +85,7 @@ if __name__ == "__main__":
     
     # Verarbeite die Datei und erhalte die Ergebnisse
     predictions = process_file(filename, model)
-    frequencies = [247,262,277,294,311,330,349,370,380,392,415,420,430,440,450,460,466,470,480,490,494,500,510,523,554,587,622]
+    frequencies = [440]
     # Parameter
     group_size = 13  # Jede Frequenz hat 13 Werte
 
