@@ -10,11 +10,11 @@ def train(D):
 
     # Hyper-Parameter
     n_steps = 400
-    learning_rate = 0.001
+    learning_rate = 0.005
     input_size = 13  # Die Anzahl der Werte pro Datensatz
     output_size = 1
-    ridge_lambda = 0.005  # Ridge Regularisierung (L2 penalty)
-    dropout_prob = 0.2
+    ridge_lambda = 0.002  # Ridge Regularisierung (L2 penalty)
+    dropout_prob = 0.3
 
     # Trainings-Daten vorbereiten
     X = train[:, :-1].astype(np.float32)

@@ -83,6 +83,8 @@ class AudioStream(object):
             self.values.append(freq)
             prediction = predict(torch.from_numpy(np.array(self.values).transpose().astype(np.float32)), model)
 
+            if 1 in prediction
+
             frame_count += 1
 
             if time.time() - start_time >= 20:
@@ -119,17 +121,15 @@ def load_model() -> object:
     class MLP(nn.Module):
             def __init__(self, input_size):
                 super().__init__()
-                n_neurons = 12
                 self.layers = nn.Sequential(
-                    nn.Linear(input_size, 10),
+                    nn.Linear(input_size, 128),
                     nn.ReLU(),
-                    nn.Linear(10, 20),
+                    nn.Dropout(0.3),
+                    nn.Linear(128, 64),
                     nn.ReLU(),
-                    nn.Linear(20, 12),
+                    nn.Linear(64, 32),
                     nn.ReLU(),
-                    nn.Linear(12, 10),
-                    nn.ReLU(),
-                    nn.Linear(10, output_size)  
+                    nn.Linear(32, output_size)
                 )
             def forward(self, x):
                 #x = x - feature_means
@@ -137,7 +137,7 @@ def load_model() -> object:
                 return out
             
     model = MLP(input_size)
-    model.load_state_dict(torch.load('model.pt', weights_only=True))
+    model.load_state_dict(torch.load('model_real.pt', weights_only=True))
     return model
 
 if __name__ == '__main__':
