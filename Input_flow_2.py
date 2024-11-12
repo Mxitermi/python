@@ -25,8 +25,8 @@ class AudioStream(object):
             200.,
             300.,
             400.,
+            440.,
             500.,
-            700.,
             1000.,
             1500.,
             2000.,
@@ -57,7 +57,10 @@ class AudioStream(object):
             rate=self.RATE,
             input=True,
             output=True,
+            input_device_index=2,
+            output_device_index=4,
             frames_per_buffer=self.CHUNK,
+            
         )
         self.start()
 
@@ -83,9 +86,12 @@ class AudioStream(object):
             self.values.append(freq)
             prediction = predict(torch.from_numpy(np.array(self.values).transpose().astype(np.float32)), model)
 
+            if np.any(prediction != 0):
+                print("Arc")
+            
             frame_count += 1
 
-            if time.time() - start_time >= 20:
+            if time.time() - start_time >= 200:
                 self.pause = True
 
             if time.perf_counter()-s_time <= self.DELAYS:
@@ -119,17 +125,15 @@ def load_model() -> object:
     class MLP(nn.Module):
             def __init__(self, input_size):
                 super().__init__()
-                n_neurons = 12
                 self.layers = nn.Sequential(
-                    nn.Linear(input_size, 10),
-                    nn.ReLU(),
-                    nn.Linear(10, 20),
-                    nn.ReLU(),
-                    nn.Linear(20, 12),
-                    nn.ReLU(),
-                    nn.Linear(12, 10),
-                    nn.ReLU(),
-                    nn.Linear(10, output_size)  
+                nn.Linear(input_size, 128),
+                nn.ReLU(),
+                nn.Dropout(0.3),
+                nn.Linear(128, 64),
+                nn.ReLU(),
+                nn.Linear(64, 32),
+                nn.ReLU(),
+                nn.Linear(32, output_size)  # Ausgabe für binäre Klassifikation
                 )
             def forward(self, x):
                 #x = x - feature_means
@@ -137,7 +141,7 @@ def load_model() -> object:
                 return out
             
     model = MLP(input_size)
-    model.load_state_dict(torch.load('model.pt', weights_only=True))
+    model.load_state_dict(torch.load('model_real.pt', weights_only=True))
     return model
 
 if __name__ == '__main__':
