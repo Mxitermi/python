@@ -110,7 +110,7 @@ def data_structure(data):
 
 def main():
     data = []
-    filename = "data_real.txt"
+    filename = "../dataset_final.txt"
     try:
         with open(os.path.join(os.path.dirname(__file__), filename), "r", encoding="utf-8") as file:
             for line in file:

@@ -95,7 +95,6 @@ if __name__ == "__main__":
     k = 0
     for freq_idx, freq in enumerate(frequencies):
         rueckkopplung_erkannt = False
-        print(f"Frequenz: {freq}")
         
         # Für jede Frequenz die 13 entsprechenden Werte extrahieren
         start_idx = freq_idx * group_size
@@ -105,8 +104,6 @@ if __name__ == "__main__":
         for idx, wert in enumerate(prediction_slice):
             if wert > 0.5:
                 rueckkopplung_erkannt = True
-                zeitpunkt = ((start_idx + idx) * 0.1) + 0.1  # Zeit in Sekunden basierend auf dem Index
-                #print(f"  Rückkopplung erkannt bei {zeitpunkt:.1f} Sekunden.")
                 r = r + 1
             else:
                 k = k + 1

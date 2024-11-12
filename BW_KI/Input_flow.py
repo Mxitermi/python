@@ -57,6 +57,8 @@ class AudioStream(object):
             rate=self.RATE,
             input=True,
             output=True,
+            input_device_index=2,
+            output_device_index=4,
             frames_per_buffer=self.CHUNK,
         )
         self.start()
@@ -83,11 +85,12 @@ class AudioStream(object):
             self.values.append(freq)
             prediction = predict(torch.from_numpy(np.array(self.values).transpose().astype(np.float32)), model)
 
-            if 1 in prediction
+            if 1 in prediction:
+                print("Rck")
 
             frame_count += 1
 
-            if time.time() - start_time >= 20:
+            if time.time() - start_time >= 200:
                 self.pause = True
 
             if time.perf_counter()-s_time <= self.DELAYS:
