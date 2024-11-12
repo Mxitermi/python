@@ -14,7 +14,6 @@ def train(D):
     input_size = 13  # Die Anzahl der Werte pro Datensatz
     output_size = 1
     ridge_lambda = 0.002  # Ridge Regularisierung (L2 penalty)
-    dropout_prob = 0.3
 
     # Trainings-Daten vorbereiten
     X = train[:, :-1].astype(np.float32)
@@ -45,7 +44,10 @@ def train(D):
             self.layers = nn.Sequential(
             nn.Linear(input_size, 128),
             nn.ReLU(),
-            nn.Dropout(p=dropout_prob),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 128),
+             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, 32),
