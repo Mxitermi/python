@@ -20,8 +20,8 @@ class AudioStream(object):
         self.DELAYS = 0.05
         #Frequenzen, die geprüft werden sollen
         self.FREQUENCIES = np.array([
-            50.,
-            100.,
+            400.,
+            440.,
             200.,
             300.,
             400.,
@@ -31,7 +31,6 @@ class AudioStream(object):
             1500.,
             2000.,
             3000.,
-            5000.,
             6000.])
         self.FREQUENCIES *= float(self.CHUNK/self.RATE)
         #Später Zwiscchenspeicherung der einzelnen Lautstärken

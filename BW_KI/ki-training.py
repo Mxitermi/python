@@ -22,10 +22,6 @@ def train(D):
     X_train = torch.from_numpy(X)
     y_train = torch.from_numpy(y)
 
-    # Normalisierung
-    feature_means = torch.mean(X_train, dim=0)
-    feature_stds = torch.std(X_train, dim=0, unbiased=False)
-    X_train = (X_train - feature_means) / feature_stds
 
     # Überprüfen und das Label auf 0 setzen, wenn alle Merkmale 0 sind
     zero_rows = (X_train == 0).all(dim=1)  # Finde alle Zeilen, bei denen alle Merkmale 0 sind
@@ -36,9 +32,6 @@ def train(D):
     y = test[:, -1].astype(np.float32).reshape(-1, 1)
     X_test = torch.from_numpy(X)
     y_test = torch.from_numpy(y)
-
-    # Normalisierung der Testdaten
-    X_test = (X_test - feature_means) / feature_stds
 
     # Überprüfen und das Label auf 0 setzen, wenn alle Merkmale 0 sind
     zero_rows_test = (X_test == 0).all(dim=1)  # Finde alle Zeilen, bei denen alle Merkmale 0 sind
