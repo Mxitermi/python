@@ -17,25 +17,25 @@ class AudioStream(object):
         self.pause = False
         
         #Abtastrate in Sekunden pro Abfrage
-        self.DELAYS = 0.05
+        self.DELAYS = 0.01
         #Frequenzen, die geprüft werden sollen
         self.FREQUENCIES = np.array([
-            250.])
+            440., 480., 260.])
         self.FREQUENCIES *= float(self.CHUNK/self.RATE)
         #Später Zwiscchenspeicherung der einzelnen Lautstärken
-        self.values = [np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1),
-                       np.zeros(1)]
+        self.values = [np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3),
+                       np.zeros(3)]
 
         # stream object
         self.p = pyaudio.PyAudio()
@@ -66,13 +66,17 @@ class AudioStream(object):
             data_int = struct.unpack(str(2 * self.CHUNK) + 'B', data)
 
             # compute FFT and update line
-            yf = fft(data_int)
+            yf = np.fft.fft(data_int)
             
-            export = np.abs(yf[0:self.CHUNK]) / (128 * self.CHUNK)
+            export = np.abs(yf[0:self.CHUNK]) / (self.CHUNK)
+
+            print(export[0])
+
             freq = np.array([float(export[int(i)]) for i in self.FREQUENCIES])
             self.values.pop(0)
             self.values.append(freq)
             prediction = predict(torch.from_numpy(np.array(self.values).transpose().astype(np.float32)), model)
+
 
             if np.any(prediction != 0):
                 print("Arc")
@@ -118,8 +122,6 @@ def load_model() -> object:
                 nn.ReLU(),
                 nn.Linear(128, 64),
                 nn.ReLU(),
-                nn.Linear(128, 64),
-                nn.ReLU(),
                 nn.Linear(64, 128),
                 nn.ReLU(),
                 nn.Linear(128, 64),
@@ -134,7 +136,7 @@ def load_model() -> object:
                 return out
             
     model = MLP(input_size)
-    model.load_state_dict(torch.load('model_real.pt', weights_only=True))
+    model.load_state_dict(torch.load('model_cool.pt', weights_only=True))
     return model
 
 if __name__ == '__main__':

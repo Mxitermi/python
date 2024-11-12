@@ -9,7 +9,7 @@ def train(D):
     train, test = D[:len_train], D[len_train:]
 
     # Hyper-Parameter
-    n_steps = 400
+    n_steps = 1000
     learning_rate = 0.005
     input_size = 13  # Die Anzahl der Werte pro Datensatz
     output_size = 1
@@ -105,7 +105,7 @@ def data_structure(data):
 
 def main():
     data = []
-    filename = "../dataset_final.txt"
+    filename = "data_cool.txt"
     try:
         with open(os.path.join(os.path.dirname(__file__), filename), "r", encoding="utf-8") as file:
             for line in file:
@@ -123,7 +123,7 @@ def main():
 
     # Trainiere das Modell mit den aufbereiteten Daten
     model = train(data_structure(data))
-    torch.save(model.state_dict(), "model_real.pt")
+    torch.save(model.state_dict(), "model_cool.pt")
 
 if __name__ == "__main__":
     main()
