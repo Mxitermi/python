@@ -10,7 +10,7 @@ class AudioStream(object):
     def __init__(self):
 
         # stream constants
-        self.CHUNK = 1024 * 2
+        self.CHUNK = 1024 
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
         self.RATE = 44100
@@ -20,7 +20,7 @@ class AudioStream(object):
         self.DELAYS = 0.01
         #Frequenzen, die geprüft werden sollen
         self.FREQUENCIES = np.array([
-            440., 480., 260.])
+            200., 500., 700.])
         self.FREQUENCIES *= float(self.CHUNK/self.RATE)
         #Später Zwiscchenspeicherung der einzelnen Lautstärken
         self.values = [np.zeros(3),
@@ -66,17 +66,19 @@ class AudioStream(object):
             data_int = struct.unpack(str(2 * self.CHUNK) + 'B', data)
 
             # compute FFT and update line
-            yf = np.fft.fft(data_int)
+            yf = np.fft.fft(data_int) / (128 * self.CHUNK)
             
-            export = np.abs(yf[0:self.CHUNK]) / (self.CHUNK)
-
-            print(export[0])
+            self.FREQUENCIES *= float(self.CHUNK / self.RATE)
+            export = np.abs(yf[0:self.CHUNK]) 
+            print(export[int(260 * self.CHUNK / self.RATE)])
+           
 
             freq = np.array([float(export[int(i)]) for i in self.FREQUENCIES])
+            freq *= 10
             self.values.pop(0)
             self.values.append(freq)
             prediction = predict(torch.from_numpy(np.array(self.values).transpose().astype(np.float32)), model)
-
+            #print(prediction)
 
             if np.any(prediction != 0):
                 print("Arc")
