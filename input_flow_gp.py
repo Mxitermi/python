@@ -1,16 +1,17 @@
 import torch
+import torch.nn as nn
 import librosa
 import numpy as np
 import pyaudio
-import torch.nn as nn
+from collections import deque
 
 # Parameter für das Audio-Streaming
-SAMPLE_RATE = 44100  # Sampling-Rate für Mikrofon-Stream
-CHUNK_SIZE = 4096  # Anzahl der Samples pro Chunk für Echtzeitverarbeitung
-DURATION = CHUNK_SIZE / SAMPLE_RATE  # Dauer jedes Chunks in Sekunden
+SAMPLE_RATE = 44100
+CHUNK_SIZE = 4096
+STACK_SIZE = 13  # Länge des Rolling Windows für jede Frequenz
 
 # Modellparameter
-input_size = 13  # Anzahl der Frequenzmerkmale pro Datensatz (13 Merkmale)
+input_size = STACK_SIZE  # Das Modell wird jetzt nur den Verlauf einer Frequenz betrachten
 
 # Definieren der Modellarchitektur (entsprechend dem Trainingsskript)
 class MLP(nn.Module):
@@ -35,26 +36,25 @@ class MLP(nn.Module):
 
 # Lade das trainierte Modell und setze es in den Evaluierungsmodus
 model = MLP(input_size)
-model.load_state_dict(torch.load('model_cool.pt', weights_only=True))
+model.load_state_dict(torch.load("model_cool.pt"))
 model.eval()
 
-# Liste der Frequenzen, die das Modell analysieren soll (13 Werte als Beispiel)
-target_frequencies = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300]  # Beispiel-Frequenzen
+# Ziel-Frequenzen und Rolling Window für jede Frequenz
+target_frequencies = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300]
+frequency_stacks = {freq: deque(maxlen=STACK_SIZE) for freq in target_frequencies}  # Erstellen eines Rolling Stacks
 
-# Funktion zur FFT und Extraktion der Amplituden der gewünschten Frequenzen
+# Funktion zur FFT und Extraktion der Amplituden für jede gewünschte Frequenz
 def extract_amplitudes(audio_segment, sr, target_frequencies):
-    # FFT durchführen
     fft_result = np.fft.fft(audio_segment)
     fft_freqs = np.fft.fftfreq(len(fft_result), 1 / sr)
     amplitudes = np.abs(fft_result)
+    frequency_amplitudes = {}
 
-    # Extraktion der Amplituden für die gewünschten Frequenzen
-    frequency_amplitudes = []
+    # Amplituden für Ziel-Frequenzen extrahieren
     for freq in target_frequencies:
-        # Finden der Indexposition der nächsten Frequenz
         closest_idx = np.argmin(np.abs(fft_freqs - freq))
-        frequency_amplitudes.append(amplitudes[closest_idx])
-    return np.array(frequency_amplitudes, dtype=np.float32)
+        frequency_amplitudes[freq] = amplitudes[closest_idx]
+    return frequency_amplitudes
 
 # Initialisiere PyAudio für den Audio-Stream
 p = pyaudio.PyAudio()
@@ -62,9 +62,6 @@ stream = p.open(format=pyaudio.paFloat32,
                 channels=1,
                 rate=SAMPLE_RATE,
                 input=True,
-                output=True,
-                input_device_index=2,
-                output_device_index=4,
                 frames_per_buffer=CHUNK_SIZE)
 
 try:
@@ -73,25 +70,28 @@ try:
         # Audio-Daten vom Mikrofon lesen
         audio_data = np.frombuffer(stream.read(CHUNK_SIZE), dtype=np.float32)
 
+        
+        
         # Amplituden der Ziel-Frequenzen extrahieren
         amplitudes = extract_amplitudes(audio_data, SAMPLE_RATE, target_frequencies)
 
-        # Überprüfen, ob genügend Merkmale vorhanden sind, andernfalls überspringen
-        if len(amplitudes) != input_size:
-            continue
-
-        # Amplituden normalisieren und in Tensor umwandeln
-        input_tensor = torch.from_numpy(amplitudes).unsqueeze(0)  # Batch-Dimension hinzufügen
-
-        # MLP-Modell auf die extrahierten Frequenzdaten anwenden
-        with torch.no_grad():
-            output = model(input_tensor)
-            prediction = torch.sigmoid(output).item()
-
-        # Falls das Modell Rückkopplung erkennt, Frequenzen ausgeben
-        if prediction > 0.5:  # Beispiel-Schwellenwert für Rückkopplung
-            detected_freqs = [f for f, amp in zip(target_frequencies, amplitudes) if amp > 0.1]
-            print(f"Feedback detected at frequencies: {detected_freqs} Hz")
+        # Stack aktualisieren und prüfen
+        for freq, amplitude in amplitudes.items():
+            # Neuen Amplitudenwert zum Stack hinzufügen
+            frequency_stacks[freq].append(amplitude)
+            
+            # Prüfen, ob der Stack für diese Frequenz die richtige Länge hat
+            if len(frequency_stacks[freq]) == STACK_SIZE:
+                # Eingabe für das Modell vorbereiten
+                input_tensor = torch.tensor(list(frequency_stacks[freq]), dtype=torch.float32).unsqueeze(0)
+                
+                # Modellvorhersage durchführen
+                with torch.no_grad():
+                    output = model(input_tensor)
+                    prediction = torch.sigmoid(output).item()
+                # Falls Rückkopplung erkannt wird, Frequenz ausgeben
+                if prediction > 0.8:  # Beispiel-Schwellenwert
+                    print(prediction)
 
 except KeyboardInterrupt:
     print("Stopping...")

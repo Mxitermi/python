@@ -48,8 +48,6 @@ class AudioStream(object):
             input=True,
             output=True,
             frames_per_buffer=self.CHUNK,
-            input_device_index=2,
-            output_device_index=4,
         )
         self.start()
 
@@ -64,9 +62,9 @@ class AudioStream(object):
             s_time = time.perf_counter()
 
             # Audio-Daten lesen
-            data = self.stream.read(self.CHUNK)
-            data_int = struct.unpack(str(2 * self.CHUNK) + 'B', data)
-            data_array = np.array(data_int, dtype=np.float32) - 128  # In Signed Integer umwandeln
+            data = np.frombuffer(self.stream.read(self.CHUNK), dtype=np.float32)
+            #data_int = struct.unpack(str(2 * self.CHUNK) + 'B', data)
+            data_array = np.array(data, dtype=np.float32) - 128  # In Signed Integer umwandeln
 
             # STFT anwenden
             freqs, times, Zxx = stft(data_array, fs=self.RATE, nperseg=self.CHUNK)
@@ -118,30 +116,31 @@ def predict(input, model):
 def load_model() -> object:
     output_size = 1
     input_size = 13
-    dropout_prob = 0.3
     
     class MLP(nn.Module):
         def __init__(self, input_size):
             super().__init__()
             self.layers = nn.Sequential(
-            nn.Linear(input_size, 256),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_prob),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_prob),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, output_size)  # Ausgabe für binäre Klassifikation
+                nn.Linear(input_size, 128),
+                nn.ReLU(),
+                nn.Linear(128, 64),
+                nn.ReLU(),
+                nn.Linear(64, 64),
+                nn.ReLU(),
+                nn.BatchNorm1d(64),
+                nn.Linear(64, 32),
+                nn.ReLU(),
+                nn.Linear(32, 16),
+                nn.ReLU(),
+                nn.Linear(16, 1)  # Letzte Schicht für binäre Klassifikation
+            
         )
 
         def forward(self, x):
             return self.layers(x)
 
     model = MLP(input_size)
-    model.load_state_dict(torch.load('model_real.pt', weights_only=True))
+    model.load_state_dict(torch.load('model_cool.pt', weights_only=True))
     return model
 
 if __name__ == '__main__':
