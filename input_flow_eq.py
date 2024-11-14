@@ -4,6 +4,7 @@ import librosa
 import numpy as np
 import pyaudio
 from collections import deque
+from scipy.signal import iirnotch, lfilter
 
 # Parameter für das Audio-Streaming
 SAMPLE_RATE = 44100
@@ -40,7 +41,7 @@ model.load_state_dict(torch.load("model_cool.pt"))
 model.eval()
 
 # Ziel-Frequenzen und Rolling Window für jede Frequenz
-target_frequencies = [121, ]
+target_frequencies = [121, 145, 186, 225, 259, 281, 347, 402, 415, 440, 479, 520, 543, 580, 629, 676,  741, 792, 853, 901, 982, 1035, 1189]
 frequency_stacks = {freq: deque(maxlen=STACK_SIZE) for freq in target_frequencies}  # Erstellen eines Rolling Stacks
 
 # Funktion zur FFT und Extraktion der Amplituden für jede gewünschte Frequenz
@@ -56,12 +57,19 @@ def extract_amplitudes(audio_segment, sr, target_frequencies):
         frequency_amplitudes[freq] = amplitudes[closest_idx]
     return frequency_amplitudes
 
+# Funktion für einen Band-Stop-Filter (Notch Filter)
+def apply_notch_filter(audio_data, sample_rate, target_freq, quality_factor=30):
+    b, a = iirnotch(target_freq, quality_factor, sample_rate)
+    filtered_data = lfilter(b, a, audio_data)
+    return filtered_data
+
 # Initialisiere PyAudio für den Audio-Stream
 p = pyaudio.PyAudio()
 stream = p.open(format=pyaudio.paFloat32,
                 channels=1,
                 rate=SAMPLE_RATE,
                 input=True,
+                output=True,  # Damit der gefilterte Ton ausgegeben werden kann
                 frames_per_buffer=CHUNK_SIZE)
 
 try:
@@ -70,8 +78,6 @@ try:
         # Audio-Daten vom Mikrofon lesen
         audio_data = np.frombuffer(stream.read(CHUNK_SIZE), dtype=np.float32)
 
-        
-        
         # Amplituden der Ziel-Frequenzen extrahieren
         amplitudes = extract_amplitudes(audio_data, SAMPLE_RATE, target_frequencies)
 
@@ -89,9 +95,14 @@ try:
                 with torch.no_grad():
                     output = model(input_tensor)
                     prediction = torch.sigmoid(output).item()
-                # Falls Rückkopplung erkannt wird, Frequenz ausgeben
+                
+                # Falls Rückkopplung erkannt wird, Frequenz stummschalten
                 if prediction > 0.8:  # Beispiel-Schwellenwert
-                    print(prediction)
+                    print(f"Rückkopplung erkannt bei {freq} Hz. Filter wird angewendet.")
+                    audio_data = apply_notch_filter(audio_data, SAMPLE_RATE, freq)
+
+        # Das gefilterte Audiosignal ausgeben
+        stream.write(audio_data.astype(np.float32).tobytes())
 
 except KeyboardInterrupt:
     print("Stopping...")
